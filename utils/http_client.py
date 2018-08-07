@@ -1,5 +1,4 @@
 import logging
-import xml.etree.ElementTree as XmlEtree
 from contextlib import contextmanager
 from urllib.parse import urljoin
 
@@ -33,53 +32,44 @@ class HttpClient(object):
         if not self.single_session:
             self.session.close()
 
-    def request(self, method, url, params=None, headers=None, data=None, json=None, xml_to_tree=False,
-                expected_code=None, **kwargs):
+    def request(self, method, url, params=None, headers=None, data=None, json=None, expected_code=None, **kwargs):
         full_url = urljoin(self.url, url)
         self.kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
         self.kwargs.update(kwargs)
-        logger.info('Making {} request:\n        URL: {}\n        PARAMS: {}\n        HEADERS: {}\n        BODY: {}'
-                    '\n        JSON: {}'.format(method, full_url, self.kwargs['params'], self.kwargs['headers'],
-                                                self.kwargs['data'], self.kwargs['json']))
+        logger.info(
+            'Making {} request:\n\tURL: {}\n\tPARAMS: {}\n\tHEADERS: {}\n\tBODY: {}'.format(
+                method, full_url, self.kwargs['params'], self.kwargs['headers'],
+                self.kwargs['data'] or self.kwargs['json'])
+        )
         with self.session_ctx() as s:
             resp = s.request(method, full_url, **self.kwargs)
             logger.info('Request executed in {} sec. Response code {}'.format(resp.elapsed, resp.status_code))
-            logger.debug(resp.text)
+            logger.debug('Response: {}'.format(resp.text))
 
             if expected_code is not None and resp.status_code != expected_code:
                 message = 'Response code is {} but {} was expected'.format(resp.status_code, expected_code)
                 logger.error(message)
-                logger.debug('Response: {}'.format(resp.text))
                 raise UnexpectedStatusCode(resp.status_code, message)
-
-            if xml_to_tree:
-                return XmlEtree.parse(resp.text)
 
             return resp
 
-    def get(self, url, params=None, headers=None, data=None, json=None, **kwargs):
-        kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
-        return self.request(self.GET, url, **kwargs)
+    def get(self, url, params=None, headers=None, json=None, **kwargs):
+        return self.request(self.GET, url, params=params, headers=headers, json=json, **kwargs)
 
-    def post(self, url, params=None, headers=None, data=None, json=None, **kwargs):
-        kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
-        return self.request(self.POST, url, **kwargs)
+    def post(self, url, params=None, headers=None, json=None, **kwargs):
+        return self.request(self.POST, url, params=params, headers=headers, json=json, **kwargs)
 
-    def put(self, url, params=None, headers=None, data=None, json=None, **kwargs):
-        kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
-        return self.request(self.PUT, url, **kwargs)
+    def put(self, url, params=None, headers=None, json=None, **kwargs):
+        return self.request(self.PUT, url, params=params, headers=headers, json=json, **kwargs)
 
-    def delete(self, url, params=None, headers=None, data=None, json=None, **kwargs):
-        kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
-        return self.request(self.DELETE, url, **kwargs)
+    def delete(self, url, params=None, headers=None, json=None, **kwargs):
+        return self.request(self.DELETE, url, params=params, headers=headers, json=json, **kwargs)
 
-    def head(self, url, params=None, headers=None, data=None, json=None, **kwargs):
-        kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
-        return self.request(self.HEAD, url, **kwargs)
+    def head(self, url, params=None, headers=None, json=None, **kwargs):
+        return self.request(self.HEAD, url, params=params, headers=headers, json=json, **kwargs)
 
-    def options(self, url, params=None, headers=None, data=None, json=None, **kwargs):
-        kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
-        return self.request(self.OPTIONS, url, **kwargs)
+    def options(self, url, params=None, headers=None, json=None, **kwargs):
+        return self.request(self.OPTIONS, url, params=params, headers=headers, json=json, **kwargs)
 
     def close(self):
         if self._session is not None:
@@ -92,7 +82,11 @@ class HttpClient(object):
         self.close()
 
 
-class UnexpectedStatusCode(Exception):
+class HTTPClientError(Exception):
+    pass
+
+
+class UnexpectedStatusCode(HTTPClientError):
 
     def __init__(self, status_code, *args, **kwargs):
         self.status_code = status_code
