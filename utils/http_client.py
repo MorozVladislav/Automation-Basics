@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: ascii -*-
 import logging
 from contextlib import contextmanager
 from urllib.parse import urljoin

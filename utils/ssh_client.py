@@ -1,10 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding: ascii -*-
 import logging
+import os
 import time
 from collections import namedtuple
 
 import paramiko
 
 logger = logging.getLogger(__name__)
+CMDResult = namedtuple('cmd_result', ['stdout', 'stderr', 'r_code', 'exec_time'])
 
 
 class SSHClient(object):
@@ -16,7 +20,8 @@ class SSHClient(object):
                  key=None,
                  passphrase=None,
                  allow_unknown_hosts=False,
-                 environment=None):
+                 environment=None,
+                 use_credentials=False):
 
         self.host = host
         self.username = username
@@ -25,75 +30,88 @@ class SSHClient(object):
         self.passphrase = passphrase
         self.allow_unknown_hosts = allow_unknown_hosts
         self.environment = environment
-        self.host_keys = paramiko.HostKeys()
         self.client = paramiko.SSHClient()
-        self.host_keys = self.client.get_host_keys()
+        self.use_credentials = use_credentials
 
     def __del__(self):
         self.client.close()
         logger.info('SSH client was closed')
 
+    @property
+    def connected(self):
+        if self.client.get_transport() is None:
+            return False
+        return True
+
     def add_system_known_hosts(self, path=None):
-        self.client.load_system_host_keys(path)
+        if path is None:
+            self.client.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
+        else:
+            self.client.load_host_keys(path)
 
     def clear_host_keys(self):
-        self.host_keys.clear()
+        self.client.get_host_keys().clear()
 
-    def connect(self, use_key=False, *args, **kwargs):
+    def connect(self, use_credentials=False, **kwargs):
 
         if self.allow_unknown_hosts:
             self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         if self.username is None:
-            message = 'Username is not specified'.format(self.host)
+            message = 'Username is not specified for {}'.format(self.host)
             logger.error(message)
-            raise ConnectionFailedException(message)
+            raise SSHConnectionFailed(message)
 
         try:
-            if use_key:
-                if self.key is None:
-                    message = 'Private key file is not specified'.format(self.host)
-                    logger.error(message)
-                    raise ConnectionFailedException(message)
-                self.client.connect(self.host, username=self.username, key_filename=self.key,
-                                    passphrase=self.passphrase, *args, **kwargs)
-            else:
+            if use_credentials:
                 if self.password is None:
-                    message = 'Password is not specified'.format(self.host)
+                    message = 'Password is not specified for {}@{}'.format(self.username, self.host)
                     logger.error(message)
-                    raise ConnectionFailedException(message)
-                self.client.connect(self.host, username=self.username, password=self.password, *args, **kwargs)
+                    raise SSHConnectionFailed(message)
+                self.client.connect(self.host, username=self.username, password=self.password, **kwargs)
+            else:
+                if self.key is None:
+                    message = 'Private key is not specified for {}@{}. Attempt to connect using credentials'.format(
+                        self.username, self.host)
+                    logger.info(message)
+                    self.client.connect(self.host, username=self.username, password=self.password, **kwargs)
+                else:
+                    self.client.connect(self.host, username=self.username, key_filename=self.key,
+                                        passphrase=self.passphrase, **kwargs)
 
         except paramiko.SSHException:
-            message = 'Failed to connect to {}'.format(self.host)
+            message = 'Failed to connect to {}@{}'.format(self.username, self.host)
             logger.error(message)
-            raise ConnectionFailedException(message)
+            raise SSHConnectionFailed(message)
 
     def execute(self, command, raise_on_error=False, **kwargs):
-        result = namedtuple('result', ['stdout', 'stderr', 'r_code', 'exec_time'])
+
+        if not self.connected:
+            self.connect(self.use_credentials)
+
         start = time.time()
-        stdin, stdout, stderr = self.client.exec_command(command.strip('\n'), environment=self.environment, **kwargs)
-        result.r_code = stdout.channel.recv_exit_status()
+        stdin, stdout, stderr = self.client.exec_command(command, environment=self.environment, **kwargs)
+        r_code = stdout.channel.recv_exit_status()
+        exec_time = time.time() - start
 
-        if raise_on_error and result.r_code != 0:
-            message = 'Failed to execute {}'.format(command.strip('\n'))
+        if raise_on_error and r_code != 0:
+            message = 'Command {} unsuccessfully executed in {} sec'.format(command, exec_time)
             logger.error(message)
-            raise CommandExecutionException(message)
+            raise CommandUnsuccessfulExecution(message)
 
-        result.exec_time = time.time() - start
-        result.stdout = ''.join(stdout.readlines())
-        result.stderr = ''.join(stderr.readlines())
-        logger.info('Command {} executed in {} sec'.format(command.strip('\n'), result.exec_time))
-        return result
+        stdout = ''.join(stdout.readlines())
+        stderr = ''.join(stderr.readlines())
+        logger.info('Command {} executed in {} sec'.format(command, exec_time))
+        return CMDResult(stdout, stderr, r_code, exec_time)
 
 
-class SSHClientException(Exception):
+class SSHClientError(Exception):
     pass
 
 
-class ConnectionFailedException(SSHClientException):
+class SSHConnectionFailed(SSHClientError):
     pass
 
 
-class CommandExecutionException(SSHClientException):
+class CommandUnsuccessfulExecution(SSHClientError):
     pass

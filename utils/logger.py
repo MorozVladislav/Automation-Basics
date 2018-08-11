@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: ascii -*-
 import logging
 import sys
 import os
