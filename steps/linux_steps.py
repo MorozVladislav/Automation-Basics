@@ -22,13 +22,6 @@ class LinuxSteps(SSHClient):
         if add_system_known_hosts:
             self.add_system_known_hosts()
 
-    def step(self, signature, get_signature=False, **kwargs):
-        if get_signature:
-            return signature
-        else:
-            logger.info('Executing {}'.format(signature))
-            return self.execute(signature, **kwargs)
-
     @staticmethod
     def signature_creator(command, options):
         signature = [command]
@@ -38,6 +31,16 @@ class LinuxSteps(SSHClient):
             else:
                 signature.append(option)
         return ' '.join(signature)
+
+    def step(self, signature, get_signature=False, **kwargs):
+        if get_signature:
+            return signature
+        else:
+            logger.info('Executing {}'.format(signature))
+            return self.execute(signature, **kwargs)
+
+    def script(self, *args, **kwargs):
+        return self.step(' '.join(args), **kwargs)
 
     def cd(self,
            path,

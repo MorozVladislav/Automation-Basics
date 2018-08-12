@@ -41,9 +41,12 @@ class TestSSH(object):
 
     def test_cd_and_ls(self, linux_steps):
         file = 'config-3.10.0-862.6.3.el7.x86_64'
-        command = '; '.join([linux_steps.cd('/boot/', get_signature=True),
-                             linux_steps.ls(long_listing_format=True, get_signature=True)])
-        result = linux_steps.step(command, raise_on_error=True)
+        result = linux_steps.script(
+            linux_steps.cd('/boot/', get_signature=True),
+            ';',
+            linux_steps.ls(long_listing_format=True, get_signature=True),
+            raise_on_error=True
+        )
         assert file in result.stdout
 
     def test_mkdir_and_rm(self, linux_steps):
