@@ -7,7 +7,7 @@ from functools import wraps
 
 from requests.auth import HTTPBasicAuth
 
-from utils.http_client import HttpClient
+from integration.http_client import HttpClient
 
 logger = logging.getLogger(__name__)
 

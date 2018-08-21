@@ -6,7 +6,7 @@ import pytest
 import config
 from steps.github_api_steps import GitHubAPISteps
 from steps.linux_steps import LinuxSteps
-from utils.ssh_client import SSHClient
+from integration.ssh_client import SSHClient
 
 config = config.load()
 

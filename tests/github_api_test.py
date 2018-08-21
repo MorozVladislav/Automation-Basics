@@ -4,8 +4,8 @@
 import pytest
 
 import config
-from utils.http_client import HttpClient
-from utils.http_client import UnexpectedStatusCode
+from integration.http_client import HttpClient
+from integration.http_client import UnexpectedStatusCode
 
 config = config.load()
 
