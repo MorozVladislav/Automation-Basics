@@ -97,6 +97,8 @@ class SSHClient(object):
         if raise_on_error and r_code != 0:
             message = 'Command {} unsuccessfully executed in {} sec'.format(command, exec_time)
             logger.error(message)
+            logger.error('\tSTDOUT: {}'.format(stdout))
+            logger.error('\tSTDERR: {}'.format(stderr))
             raise CommandUnsuccessfulExecution(message)
 
         stdout = ''.join(stdout.readlines())
