@@ -82,6 +82,13 @@ class DBSteps(DBClient):
     def get_users_owing_vehicle(self, vehicle=None):
         return vehicle.users
 
+    @id_or_name
+    def get_user_vehicles_total_price(self, user=None):
+        total_price = 0
+        for vehicle in user.vehicles:
+            total_price += vehicle.price
+        return total_price
+
 
 class DBStepsException(Exception):
     pass

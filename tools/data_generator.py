@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: ascii -*-
+import os
 import random
 import sys
-sys.path.append('.')
+
+sys.path.append(os.path.abspath('.'))
+
 from config import SSH
 
 import forgery_py

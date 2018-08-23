@@ -7,6 +7,7 @@ import config
 from steps.github_api_steps import GitHubAPISteps
 from steps.linux_steps import LinuxSteps
 from integration.ssh_client import SSHClient
+from steps.db_steps import DBSteps
 
 config = config.load()
 
@@ -33,3 +34,12 @@ def linux_steps():
                       username=config.ssh.user,
                       key=config.ssh.key,
                       passphrase=config.ssh.passphrase)
+
+
+@pytest.fixture
+def db_steps():
+    return DBSteps(config.db.name,
+                   config.db.username,
+                   config.db.password,
+                   host=config.db.host,
+                   log=config.db.log)
