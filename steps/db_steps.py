@@ -22,6 +22,9 @@ class DBSteps(DBClient):
     def get_users_by_name(self, username):
         return self.query(Users).filter(Users.name == username)
 
+    def get_user_by_login(self, login):
+        return self.query(Users).filter(Users.login == login).first()
+
     def get_user_login(self, user_id):
         return self.get_user_by_id(user_id).login
 

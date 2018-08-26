@@ -8,6 +8,7 @@ from steps.github_api_steps import GitHubAPISteps
 from steps.linux_steps import LinuxSteps
 from integration.ssh_client import SSHClient
 from steps.db_steps import DBSteps
+from tools.data_generator import DataGenerator
 
 config = config.load()
 
@@ -43,3 +44,14 @@ def db_steps():
                    config.db.password,
                    host=config.db.host,
                    log=config.db.log)
+
+
+@pytest.fixture(scope='class')
+def samples():
+    generator = DataGenerator(config.db.name,
+                              config.db.username,
+                              config.db.password,
+                              host=config.db.host)
+    generator.generate_data()
+    generator.generate_samples()
+    return generator
