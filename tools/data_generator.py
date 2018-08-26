@@ -22,20 +22,30 @@ Base = declarative_base(bind=engine)
 Base.metadata.drop_all(tables=[Users.__table__, Vehicles.__table__, association])
 Base.metadata.create_all(tables=[Users.__table__, Vehicles.__table__, association])
 
-for i in range(100):
+logins = []
+while len(session.query(Users).all()) < 100:
+    login = forgery_py.internet.user_name()
+    if login in logins:
+        continue
     user = Users(
         name=forgery_py.name.full_name(),
-        login=forgery_py.internet.user_name(),
+        login=login,
         password=forgery_py.basic.text(8),
     )
+    logins.append(login)
     session.add(user)
 
-for i in range(10):
+titles = []
+while len(session.query(Vehicles).all()) < 10:
+    title = forgery_py.basic.hex_color()
+    if title in titles:
+        continue
     vehicle = Vehicles(
-        title=forgery_py.basic.hex_color(),
+        title=title,
         type=forgery_py.basic.hex_color_short(),
         price=random.randint(1000, 1000000)
     )
+    titles.append(title)
     session.add(vehicle)
 
 for user in session.query(Users):
@@ -43,7 +53,8 @@ for user in session.query(Users):
     for i in range(random.randint(1, 5)):
         vehicle_id = random.randint(1, 10)
         vehicle = session.query(Vehicles).filter(Vehicles.id == vehicle_id).first()
-        vehicles.append(vehicle)
+        if vehicle not in vehicles:
+            vehicles.append(vehicle)
     user.vehicles = vehicles
     session.add(user)
 
@@ -54,13 +65,6 @@ print()
 
 for vehicle_id, title, vtype, price in session.query(Vehicles.id, Vehicles.title, Vehicles.type, Vehicles.price):
     print('{} {} {} {}'.format(vehicle_id, title.rstrip(), vtype.rstrip(), price))
-
-print()
-
-for vehicle_id, vehicle in session.query(Vehicles.id, Vehicles).order_by(Vehicles.id):
-    print('Vehicle ID: {}'.format(vehicle_id))
-    for user in vehicle.users:
-        print('\tUser ID: {}'.format(user.id))
 
 print()
 

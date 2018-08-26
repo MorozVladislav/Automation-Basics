@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class DBClient(Session):
 
     def __init__(self, db_name, username, password, db_type='postgresql', dbapi='psycopg2', host='127.0.0.1',
-                 port='5432', autocomit=False, autoflush=False, save_when_exit=False, log=False):
+                 port='5432', autocomit=False, autoflush=True, save_when_exit=False, log=False):
 
         self.db_type = db_type
         self.dbapi = dbapi
