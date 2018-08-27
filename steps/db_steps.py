@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: ascii -*-
+# -*- coding: utf-8 -*-
 import logging
 
 from integration.db_client import DBClient
