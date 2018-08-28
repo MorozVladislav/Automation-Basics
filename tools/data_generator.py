@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import logging
 from random import randint
 
@@ -40,7 +41,6 @@ class DataGenerator(object):
 
     def __init__(self, db_name, username, password, db_type='postgresql', dbapi='psycopg2', host='127.0.0.1',
                  port='5432', log=False):
-
         self.engine = create_engine('{}+{}://{}:{}@{}:{}/{}'.format(
             db_type,
             dbapi,
@@ -54,7 +54,6 @@ class DataGenerator(object):
         self.base = declarative_base(bind=self.engine)
 
     def generate_data(self):
-
         self.base.metadata.drop_all(tables=[Users.__table__, Vehicles.__table__, association])
         self.base.metadata.create_all(tables=[Users.__table__, Vehicles.__table__, association])
 
@@ -107,7 +106,6 @@ class DataGenerator(object):
         self.session.commit()
 
     def generate_samples(self):
-
         self.SAMPLE_1 = self.session.query(Users.id, Users.name).filter(Users.id == randint(1, 100)).first()
         self.SAMPLE_2 = self.session.query(Users.name, Users.login).filter(Users.id == randint(1, 100)).first()
         self.SAMPLE_3 = self.session.query(Users.login, Users.name).filter(Users.id == randint(1, 100)).first()

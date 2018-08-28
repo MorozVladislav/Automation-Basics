@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import logging
 
 from integration.db_client import DBClient
@@ -12,7 +13,6 @@ class DBSteps(DBClient):
 
     def __init__(self, db_name, username, password, host='127.0.0.1', port='5432', autocomit=False, autoflush=True,
                  save_when_exit=False, log=False):
-
         super().__init__(db_name, username, password, db_type='postgresql', dbapi='psycopg2', host=host, port=port,
                          autocomit=autocomit, autoflush=autoflush, save_when_exit=save_when_exit, log=log)
 
