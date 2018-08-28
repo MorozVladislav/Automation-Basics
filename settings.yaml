@@ -12,3 +12,9 @@ ssh:
   password: password
   key: ~/.ssh/id_rsa
   passphrase: passphrase
+db:
+  name: test_db
+  host: 192.168.56.101
+  user: root
+  password: 12345678
+  log: True

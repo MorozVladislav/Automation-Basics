@@ -40,7 +40,7 @@ def linux_steps():
 @pytest.fixture
 def db_steps():
     return DBSteps(config.db.name,
-                   config.db.username,
+                   config.db.user,
                    config.db.password,
                    host=config.db.host,
                    log=config.db.log)
@@ -49,7 +49,7 @@ def db_steps():
 @pytest.fixture(scope='class')
 def samples():
     generator = DataGenerator(config.db.name,
-                              config.db.username,
+                              config.db.user,
                               config.db.password,
                               host=config.db.host)
     generator.generate_data()
