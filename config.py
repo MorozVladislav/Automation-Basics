@@ -1,21 +1,32 @@
 #!/usr/bin/env python3
-# -*- coding: ascii -*-
-import os
+# -*- coding: utf-8 -*-
+
+import logging
+
+from lya import AttrDict
+
+logger = logging.getLogger(__name__)
 
 
-class API:
-    HOST = 'https://api.github.com/'
-    LOGIN = os.environ['GITHUB_USER']
-    PASSWORD = os.environ['GITHUB_PSWD']
-    CLIENT_ID = os.environ['GITHUB_CLIENT_ID']
-    CLIENT_SECRET = os.environ['GITHUB_CLIENT_SECRET']
-    REPO_NAME = 'test-repo'
-    REPO_DESCRIPTION = 'Just a test repo'
+class Config(AttrDict):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def load(self):
+        try:
+            self.from_yaml(open('settings.yaml', 'r'))
+        except FileNotFoundError as exc:
+            message = 'File settings.yaml is missing'
+            logger.error(message)
+            raise exc
+        private_config = {}
+        try:
+            private_config = AttrDict.from_yaml(open('settings_local.yaml', 'r'))
+        except FileNotFoundError:
+            logger.warning('File settings_local.yaml is missing')
+        self.update_dict(private_config)
 
 
-class SSH:
-    HOST = '192.168.56.101'
-    USERNAME = os.environ['SSH_USER']
-    PASSWORD = os.environ['SSH_PSWD']
-    KEY = os.environ['SSH_KEY']
-    PASSPHRASE = os.environ['SSH_PASSPHRASE']
+config = Config()
+config.load()

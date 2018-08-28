@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: ascii -*-
+# -*- coding: utf-8 -*-
+
 import pytest
 
-import config
+from config import config
 from utils.http_client import HttpClient
 from utils.http_client import UnexpectedStatusCode
 
@@ -19,12 +20,12 @@ class TestGitHubAPI(object):
         except UnexpectedStatusCode:
             pass
         try:
-            self.api.delete_repo(config.API.REPO_NAME)
+            self.api.delete_repo(config.github_api.repo_name)
         except UnexpectedStatusCode:
             pass
 
     def test_unauthorized_request(self):
-        client = HttpClient(host=config.API.HOST)
+        client = HttpClient(host=config.github_api.host)
         assert int(client.get('zen', expected_code=200).headers['X-RateLimit-Limit']) == 60
 
     def test_authorized_request(self):
@@ -46,12 +47,12 @@ class TestGitHubAPI(object):
         self.api.get_token(['user', 'repo', 'delete_repo'])
         self.api.use_token = True
         repos_count = len(self.api.get_repos(params=params).json())
-        repo_properties = {'description': config.API.REPO_DESCRIPTION}
-        resp = self.api.create_repo(config.API.REPO_NAME, repo_properties)
-        assert resp.json()['name'] == config.API.REPO_NAME
-        assert resp.json()['description'] == config.API.REPO_DESCRIPTION
+        repo_properties = {'description': config.github_api.repo_description}
+        resp = self.api.create_repo(config.github_api.repo_name, repo_properties)
+        assert resp.json()['name'] == config.github_api.repo_name
+        assert resp.json()['description'] == config.github_api.repo_description
         assert len(self.api.get_repos(params=params).json()) == repos_count + 1
-        self.api.delete_repo(config.API.REPO_NAME)
+        self.api.delete_repo(config.github_api.repo_name)
         assert len(self.api.get_repos(params=params).json()) == repos_count
 
     def test_get_user_repos(self):
@@ -59,23 +60,24 @@ class TestGitHubAPI(object):
         self.api.use_token = True
         params = {'type': 'owner'}
         repos_count = len(self.api.get_repos(params=params).json())
-        repo_properties = {'description': config.API.REPO_DESCRIPTION}
-        self.api.create_repo(config.API.REPO_NAME, repo_properties)
+        repo_properties = {'description': config.github_api.repo_description}
+        self.api.create_repo(config.github_api.repo_name, repo_properties)
         resp = self.api.get_user_repos(self.api.username)
-        assert resp.json()[repos_count]['name'] == config.API.REPO_NAME
-        assert resp.json()[repos_count]['description'] == config.API.REPO_DESCRIPTION
+        assert resp.json()[repos_count]['name'] == config.github_api.repo_name
+        assert resp.json()[repos_count]['description'] == config.github_api.repo_description
         params = {'sort': 'created', 'direction': 'desc'}
-        assert self.api.get_user_repos(self.api.username, params=params).json()[0]['name'] == config.API.REPO_NAME
+        assert self.api.get_user_repos(self.api.username,
+                                       params=params).json()[0]['name'] == config.github_api.repo_name
 
     def test_create_the_same_repo(self):
         params = {'type': 'owner'}
         self.api.get_token(['user', 'repo', 'delete_repo'])
         self.api.use_token = True
         repos_count = len(self.api.get_repos(params=params).json())
-        repo_properties = {'description': config.API.REPO_DESCRIPTION}
-        self.api.create_repo(config.API.REPO_NAME, repo_properties)
+        repo_properties = {'description': config.github_api.repo_description}
+        self.api.create_repo(config.github_api.repo_name, repo_properties)
         try:
-            self.api.create_repo(config.API.REPO_NAME, repo_properties)
+            self.api.create_repo(config.github_api.repo_name, repo_properties)
         except UnexpectedStatusCode as exc:
             assert exc.status_code == 422
         assert len(self.api.get_repos(params=params).json()) == repos_count + 1
@@ -86,7 +88,7 @@ class TestGitHubAPI(object):
         self.api.use_token = True
         repos_count = len(self.api.get_repos(params=params).json())
         try:
-            self.api.delete_repo(config.API.REPO_NAME)
+            self.api.delete_repo(config.github_api.repo_name)
         except UnexpectedStatusCode as exc:
             assert exc.status_code == 404
         assert len(self.api.get_repos(params=params).json()) == repos_count
@@ -98,8 +100,8 @@ class TestGitHubAPI(object):
         self.api.get_token(['user', 'repo', 'delete_repo'])
         self.api.use_token = True
         repos_count = len(self.api.get_repos(params=params).json())
-        repo_properties = {'description': config.API.REPO_DESCRIPTION}
-        self.api.create_repo(config.API.REPO_NAME, repo_properties)
+        repo_properties = {'description': config.github_api.repo_description}
+        self.api.create_repo(config.github_api.repo_name, repo_properties)
         repo_properties = {
             'description': edited_repo_description,
             'homepage': edited_repo_homepage,
@@ -107,7 +109,7 @@ class TestGitHubAPI(object):
             'has_projects': False,
             "has_wiki": False
         }
-        self.api.edit_repo(config.API.REPO_NAME, repo_properties)
+        self.api.edit_repo(config.github_api.repo_name, repo_properties)
         resp = self.api.get_repos(params=params)
         assert resp.json()[repos_count]['description'] == edited_repo_description
         assert resp.json()[repos_count]['homepage'] == edited_repo_homepage
@@ -128,14 +130,14 @@ class TestGitHubAPI(object):
             "has_wiki": False
         }
         try:
-            self.api.edit_repo(config.API.REPO_NAME, repo_properties)
+            self.api.edit_repo(config.github_api.repo_name, repo_properties)
         except UnexpectedStatusCode as exc:
             assert exc.status_code == 404
 
     def test_get_repo_topics(self):
         self.api.get_token(['user', 'repo', 'delete_repo'])
         self.api.use_token = True
-        repo_properties = {'description': config.API.REPO_DESCRIPTION}
-        self.api.create_repo(config.API.REPO_NAME, repo_properties)
+        repo_properties = {'description': config.github_api.repo_description}
+        self.api.create_repo(config.github_api.repo_name, repo_properties)
         headers = {'Accept': 'application/vnd.github.mercy-preview+json'}
-        assert self.api.get_repo_topics(config.API.REPO_NAME, headers=headers).json()['names'] == []
+        assert self.api.get_repo_topics(config.github_api.repo_name, headers=headers).json()['names'] == []

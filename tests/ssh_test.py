@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: ascii -*-
+# -*- coding: utf-8 -*-
+
 import time
 
 from utils.ssh_client import SSHClientError, SSHConnectionFailed
@@ -20,11 +21,11 @@ class TestSSH(object):
         ssh_client.connect(use_credentials=True)
 
     def test_connection_to_system_known_host(self, ssh_client):
-        ssh_client.add_system_known_hosts()
+        ssh_client.load_system_known_hosts()
         ssh_client.connect(use_credentials=True)
 
     def test_delete_known_hosts(self, ssh_client):
-        ssh_client.add_system_known_hosts()
+        ssh_client.load_system_known_hosts()
         ssh_client.connect(use_credentials=True)
         ssh_client.clear_host_keys()
         try:
@@ -35,18 +36,13 @@ class TestSSH(object):
             assert exc_type == SSHConnectionFailed
 
     def test_execute_command(self, ssh_client):
-        ssh_client.add_system_known_hosts()
+        ssh_client.load_system_known_hosts()
         assert 'INTEL' in ssh_client.execute("grep 'AGP' /boot/config-3.10.0-862.6.3.el7.x86_64",
                                              raise_on_error=True).stdout
 
     def test_cd_and_ls(self, linux_steps):
         file = 'config-3.10.0-862.6.3.el7.x86_64'
-        result = linux_steps.script(
-            linux_steps.cd('/boot/', get_signature=True),
-            ';',
-            linux_steps.ls(long_listing_format=True, get_signature=True),
-            raise_on_error=True
-        )
+        result = linux_steps.ls(cd='/boot/', long_listing_format=True, raise_on_error=True)
         assert file in result.stdout
 
     def test_mkdir_and_rm(self, linux_steps):

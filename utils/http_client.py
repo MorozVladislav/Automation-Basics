@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: ascii -*-
+# -*- coding: utf-8 -*-
+
 import logging
 from contextlib import contextmanager
 from urllib.parse import urljoin
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class HttpClient(object):
 
-    GET, POST, PUT, DELETE, HEAD, OPTIONS = 'GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'
+    GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH = 'GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'
 
     def __init__(self, host='', base_url='', single_session=False, **kwargs):
         self.url = urljoin(host, base_url)

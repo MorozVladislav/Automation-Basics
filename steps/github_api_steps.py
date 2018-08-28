@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: ascii -*-
+# -*- coding: utf-8 -*-
+
 import logging
 import time
 from functools import wraps
@@ -13,21 +14,21 @@ logger = logging.getLogger(__name__)
 
 def credentials_checkup(func):
     @wraps(func)
-    def wrapped(obj, *args, **kwargs):
-        if obj.login is None or obj.password is None:
+    def wrapped(self, *args, **kwargs):
+        if self.login is None or self.password is None:
             logger.error('Credentials are not specified')
             raise AuthorizationError
-        return func(obj, *args, **kwargs)
+        return func(self, *args, **kwargs)
     return wrapped
 
 
 def token_checkup(func):
     @wraps(func)
-    def wrapped(obj, *args, **kwargs):
-        if obj.use_token and obj.token is None:
+    def wrapped(self, *args, **kwargs):
+        if self.use_token and self.token is None:
             logger.error('Token is empty')
             raise AuthorizationError
-        return func(obj, *args, **kwargs)
+        return func(self, *args, **kwargs)
     return wrapped
 
 
@@ -45,7 +46,7 @@ class GitHubAPISteps(HttpClient):
     @property
     def username(self):
         if self._username is None:
-            self.get_username()
+            self._username = self.get_username()
         return self._username
 
     @credentials_checkup
@@ -59,6 +60,8 @@ class GitHubAPISteps(HttpClient):
 
     @credentials_checkup
     def get_token(self, scopes):
+        if scopes is None:
+            scopes = ['public_repo']
         auth = HTTPBasicAuth(self.login, self.password)
         body = {
             'scopes': scopes,
@@ -81,63 +84,66 @@ class GitHubAPISteps(HttpClient):
         return self.delete('authorizations/{}'.format(self.authorization_id), auth=auth, expected_code=204, **kwargs)
 
     def get_username(self, **kwargs):
-        self._username = self.authorised_request('GET', 'user', expected_code=200, **kwargs).json()['login']
-        return self._username
+        return self.authorised_request(self.GET, 'user', expected_code=200, **kwargs).json()['login']
 
     def get_repos(self, **kwargs):
-        return self.authorised_request('GET', 'user/repos', expected_code=200, **kwargs)
+        return self.authorised_request(self.GET, 'user/repos', expected_code=200, **kwargs)
 
     def get_user_repos(self, username, **kwargs):
-        return self.authorised_request('GET', 'users/{}/repos'.format(username), expected_code=200, **kwargs)
+        return self.authorised_request(self.GET, 'users/{}/repos'.format(username), expected_code=200, **kwargs)
 
-    def create_repo(self, name, repo_properties={}, **kwargs):
+    def create_repo(self, name, repo_properties, **kwargs):
+        if repo_properties is None:
+            repo_properties = {}
         body = {'name': name}
         body.update(repo_properties)
-        return self.authorised_request('POST', 'user/repos', json=body, expected_code=201, **kwargs)
+        return self.authorised_request(self.POST, 'user/repos', json=body, expected_code=201, **kwargs)
 
     def delete_repo(self, name, wait_for_deletion=True, **kwargs):
         resp = self.authorised_request(
-            'DELETE', 'repos/{}/{}'.format(self.username, name), expected_code=204, **kwargs)
+            self.DELETE, 'repos/{}/{}'.format(self.username, name), expected_code=204, **kwargs)
         if wait_for_deletion:
             self.wait_for_repo_deletion(name)
         return resp
 
-    def wait_for_repo_deletion(self, name, repo_delete_timeout=5, repo_delete_sleep=0.5):
-        del_time = time.time()
+    def wait_for_repo_deletion(self, name, delete_timeout=5, interval=0.5):
+        start = time.time()
         params = {'type': 'owner'}
-        while time.time() - del_time < repo_delete_timeout:
+        while time.time() - start < delete_timeout:
             if name not in self.get_repos(params=params).json():
                 return True
             else:
-                time.sleep(repo_delete_sleep)
-        message = 'Failed to delete repository within {} sec'.format(repo_delete_timeout)
+                time.sleep(interval)
+        message = 'Failed to delete repository within {} sec'.format(delete_timeout)
         logger.error(message)
-        raise DeletionError(message)
+        raise RepoDeletionTimeout(message)
 
-    def edit_repo(self, name, repo_properties={}, **kwargs):
+    def edit_repo(self, name, repo_properties, **kwargs):
+        if repo_properties is None:
+            repo_properties = {}
         body = {'name': name}
         body.update(repo_properties)
-        return self.authorised_request('PATCH', 'repos/{}/{}'.format(self.username, name), json=body,
+        return self.authorised_request(self.PATCH, 'repos/{}/{}'.format(self.username, name), json=body,
                                        expected_code=200, **kwargs)
 
     def get_repo_topics(self, repo_name, username=None, **kwargs):
         if username is None:
-            return self.authorised_request('GET', 'repos/{}/{}/topics'.format(self.username, repo_name),
+            return self.authorised_request(self.GET, 'repos/{}/{}/topics'.format(self.username, repo_name),
                                            expected_code=200, **kwargs)
         else:
-            return self.authorised_request('GET', 'repos/{}/{}/topics'.format(username, repo_name),
+            return self.authorised_request(self.GET, 'repos/{}/{}/topics'.format(username, repo_name),
                                            expected_code=200, **kwargs)
 
 
-class APIStepsError(Exception):
+class GitHubAPIStepsError(Exception):
     pass
 
 
-class AuthorizationError(APIStepsError):
+class AuthorizationError(GitHubAPIStepsError):
     pass
 
 
-class DeletionError(APIStepsError):
+class RepoDeletionTimeout(GitHubAPIStepsError):
     pass
 
 
