@@ -107,7 +107,7 @@ class TestGitHubAPI(object):
             'homepage': edited_repo_homepage,
             'has_issues': False,
             'has_projects': False,
-            "has_wiki": False
+            'has_wiki': False
         }
         self.api.edit_repo(config.github_api.repo_name, repo_properties)
         resp = self.api.get_repos(params=params)
@@ -127,7 +127,7 @@ class TestGitHubAPI(object):
             'homepage': edited_repo_homepage,
             'has_issues': False,
             'has_projects': False,
-            "has_wiki": False
+            'has_wiki': False
         }
         try:
             self.api.edit_repo(config.github_api.repo_name, repo_properties)
