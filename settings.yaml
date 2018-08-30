@@ -1,14 +1,14 @@
 github_api:
   host: https://api.github.com/
-  login: mvs.vladislav@gmail.com
-  password: 12345678
+  login: github_account@example.com
+  password: password
   client_id: client_id
   client_secret: client_secret
-  repo_name: test-repo
+  repo_name: test_repo
   repo_description: Just a test repo
 ssh:
   host: 192.168.56.101
   user: root
-  password: 12345678
-  key: /home/vladislav/.ssh/id_rsa
+  password: password
+  key: /home/user/.ssh/id_rsa
   passphrase: passphrase

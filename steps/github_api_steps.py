@@ -59,9 +59,9 @@ class GitHubAPISteps(HttpClient):
         return self.request(method, url, auth=auth, **kwargs)
 
     @credentials_checkup
-    def get_token(self, scopes):
+    def get_token(self, scopes=None):
         if scopes is None:
-            scopes = ['public_repo']
+            scopes = ['public_repo', ]
         auth = HTTPBasicAuth(self.login, self.password)
         body = {
             'scopes': scopes,
@@ -92,7 +92,7 @@ class GitHubAPISteps(HttpClient):
     def get_user_repos(self, username, **kwargs):
         return self.authorised_request(self.GET, 'users/{}/repos'.format(username), expected_code=200, **kwargs)
 
-    def create_repo(self, name, repo_properties, **kwargs):
+    def create_repo(self, name, repo_properties=None, **kwargs):
         if repo_properties is None:
             repo_properties = {}
         body = {'name': name}
@@ -118,7 +118,7 @@ class GitHubAPISteps(HttpClient):
         logger.error(message)
         raise RepoDeletionTimeout(message)
 
-    def edit_repo(self, name, repo_properties, **kwargs):
+    def edit_repo(self, name, repo_properties=None, **kwargs):
         if repo_properties is None:
             repo_properties = {}
         body = {'name': name}
@@ -127,12 +127,9 @@ class GitHubAPISteps(HttpClient):
                                        expected_code=200, **kwargs)
 
     def get_repo_topics(self, repo_name, username=None, **kwargs):
-        if username is None:
-            return self.authorised_request(self.GET, 'repos/{}/{}/topics'.format(self.username, repo_name),
-                                           expected_code=200, **kwargs)
-        else:
-            return self.authorised_request(self.GET, 'repos/{}/{}/topics'.format(username, repo_name),
-                                           expected_code=200, **kwargs)
+        user = self.username if username is None else username
+        return self.authorised_request(self.GET, 'repos/{}/{}/topics'.format(user, repo_name),
+                                       expected_code=200, **kwargs)
 
 
 class GitHubAPIStepsError(Exception):
