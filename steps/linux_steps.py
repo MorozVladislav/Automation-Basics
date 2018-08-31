@@ -37,7 +37,7 @@ class LinuxSteps(SSHClient):
               mode=None,
               parents=False,
               verbose=False,
-              options=None,
+              options=(),
               **kwargs):
         options_map = (
             ('--mode={}'.format(mode), mode),
@@ -52,7 +52,7 @@ class LinuxSteps(SSHClient):
            path,
            force=True,
            recursive=False,
-           options=None,
+           options=(),
            **kwargs):
         options_map = (
             ('-f', force),
@@ -66,7 +66,7 @@ class LinuxSteps(SSHClient):
            path='',
            show_all=False,
            long_listing_format=False,
-           options=None,
+           options=(),
            **kwargs):
         options_map = (
             ('-a', show_all),
@@ -81,7 +81,7 @@ class LinuxSteps(SSHClient):
            destination='',
            force=False,
            recursive=False,
-           options=None,
+           options=(),
            **kwargs):
         options_map = (
             ('-f', force),
@@ -97,7 +97,7 @@ class LinuxSteps(SSHClient):
            directory='',
            force=False,
            update=False,
-           options=None,
+           options=(),
            **kwargs):
         options_map = (
             ('-f', force),
@@ -112,7 +112,7 @@ class LinuxSteps(SSHClient):
              set_time=None,
              universal=False,
              date_format='',
-             options=None,
+             options=(),
              **kwargs):
         options_map = (
             ('--set={}'.format(set_time), set_time),
