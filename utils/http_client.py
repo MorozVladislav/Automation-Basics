@@ -40,14 +40,14 @@ class HttpClient(object):
         self.kwargs.update({'params': params, 'headers': headers, 'data': data, 'json': json})
         self.kwargs.update(kwargs)
         logger.info(
-            'Making {} request:\n\tURL: {}\n\tPARAMS: {}\n\tHEADERS: {}\n\tBODY: {}'.format(
+            'Making HTTP(S) request:\n\tMETHOD: {}\n\tURL: {}\n\tPARAMS: {}\n\tHEADERS: {}\n\tBODY: {}'.format(
                 method, full_url, self.kwargs['params'], self.kwargs['headers'],
                 self.kwargs['data'] or self.kwargs['json'])
         )
         with self.session_ctx() as s:
             resp = s.request(method, full_url, **self.kwargs)
-            logger.info('Request executed in {} sec. Response code {}'.format(resp.elapsed, resp.status_code))
-            logger.debug('Response: {}'.format(resp.text))
+            logger.info('Request executed in {} sec., response code: {}'.format(resp.elapsed, resp.status_code))
+            logger.debug('Response:\n{}'.format(resp.text))
 
             if expected_code is not None and resp.status_code != expected_code:
                 message = 'Response code is {} but {} was expected'.format(resp.status_code, expected_code)
@@ -64,6 +64,9 @@ class HttpClient(object):
 
     def put(self, url, params=None, headers=None, json=None, **kwargs):
         return self.request(self.PUT, url, params=params, headers=headers, json=json, **kwargs)
+
+    def patch(self, url, params=None, headers=None, json=None, **kwargs):
+        return self.request(self.PATCH, url, params=params, headers=headers, json=json, **kwargs)
 
     def delete(self, url, params=None, headers=None, json=None, **kwargs):
         return self.request(self.DELETE, url, params=params, headers=headers, json=json, **kwargs)

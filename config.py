@@ -1,32 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
+import os
 
 from lya import AttrDict
 
-logger = logging.getLogger(__name__)
+CONFIG = 'settings.yaml'
+LOCAL_CONFIG = 'settings_local.yaml'
 
 
-class Config(AttrDict):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def load(self):
-        try:
-            self.from_yaml(open('settings.yaml', 'r'))
-        except FileNotFoundError as exc:
-            message = 'File settings.yaml is missing'
-            logger.error(message)
-            raise exc
-        private_config = {}
-        try:
-            private_config = AttrDict.from_yaml(open('settings_local.yaml', 'r'))
-        except FileNotFoundError:
-            logger.warning('File settings_local.yaml is missing')
-        self.update_dict(private_config)
-
-
-config = Config()
-config.load()
+def load():
+    with open(os.path.expanduser(CONFIG), 'r') as cfg:
+        config = AttrDict.from_yaml(cfg)
+    local_config_path = os.path.expanduser(LOCAL_CONFIG)
+    if os.path.isfile(local_config_path):
+        with open(local_config_path, 'r') as cfg:
+            local_config = AttrDict.from_yaml(cfg)
+            config.update_dict(local_config)
+    return config

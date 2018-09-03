@@ -3,9 +3,11 @@
 
 import pytest
 
-from config import config
+import config
 from utils.http_client import HttpClient
 from utils.http_client import UnexpectedStatusCode
+
+config = config.load()
 
 
 class TestGitHubAPI(object):

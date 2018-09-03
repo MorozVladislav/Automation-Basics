@@ -27,7 +27,7 @@ class SSHClient(object):
         self.host = host
         self.username = username
         self.password = password
-        self.key = key
+        self.key = os.path.expanduser(key)
         self.passphrase = passphrase
         self.allow_unknown_hosts = allow_unknown_hosts
         self.environment = environment
@@ -43,10 +43,8 @@ class SSHClient(object):
         return False if self.client.get_transport() is None else True
 
     def load_system_known_hosts(self, path=None):
-        if path is None:
-            self.client.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
-        else:
-            self.client.load_host_keys(path)
+        host_key_path = os.path.expanduser('~/.ssh/known_hosts') if path is None else path
+        self.client.load_host_keys(host_key_path)
 
     def clear_host_keys(self):
         self.client.get_host_keys().clear()
@@ -63,15 +61,11 @@ class SSHClient(object):
             message = 'Private key is not specified for {}@{}. Attempt to connect using credentials'.format(
                 self.username, self.host)
             logger.warning(message)
-            raise SSHKeyMissing(message)
-        if self.passphrase is None:
-            message = 'Passphrase is not specified for {}'.format(self.key)
-            logger.error(message)
             raise SSHConnectionFailed(message)
         self.client.connect(self.host, username=self.username, key_filename=self.key, passphrase=self.passphrase,
                             **kwargs)
 
-    def connect(self, use_credentials=False, **kwargs):
+    def connect(self, use_credentials=None, **kwargs):
         if self.allow_unknown_hosts:
             self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -80,25 +74,18 @@ class SSHClient(object):
             logger.error(message)
             raise SSHConnectionFailed(message)
 
-        try:
-            if use_credentials:
-                self._connect_with_password(**kwargs)
-            else:
-                try:
-                    self._connect_with_key(**kwargs)
-                except SSHKeyMissing:
-                    self._connect_with_password(**kwargs)
+        force_credentials = self.use_credentials if use_credentials is None else use_credentials
 
-        except paramiko.SSHException:
-            message = 'Failed to connect to {}@{}'.format(self.username, self.host)
-            logger.error(message)
-            raise SSHConnectionFailed(message)
+        if force_credentials or self.key is None:
+            self._connect_with_password(**kwargs)
+        else:
+            self._connect_with_key(**kwargs)
 
     def execute(self, command, raise_on_error=False, **kwargs):
         if not self.connected:
-            self.connect(self.use_credentials)
+            self.connect()
 
-        logger.info('Executing: {}'.format(command))
+        logger.info('Executing SSH command: {}'.format(command))
         start = time.time()
         stdin, stdout, stderr = self.client.exec_command(command, environment=self.environment, **kwargs)
         r_code = stdout.channel.recv_exit_status()
@@ -106,11 +93,9 @@ class SSHClient(object):
         stdout = ''.join(stdout.readlines())
         stderr = ''.join(stderr.readlines())
 
-        stdout_log = ''.join(list(line + '\n\t\t' for line in stdout.splitlines())).strip('\n\t\t')
-        stderr_log = ''.join(list(line + '\n\t\t' for line in stderr.splitlines())).strip('\n\t\t')
-        logger.info('Command executed in {} sec\n\tSTDOUT: {}\n\tSTDERR: {}'.format(exec_time, stdout_log, stderr_log))
+        logger.info('Command executed in {} sec\nSTDOUT:\n{}\nSTDERR:\n{}'.format(exec_time, stdout, stderr))
         if raise_on_error and r_code != 0:
-            message = 'Command failed. Status code: {}'.format(r_code)
+            message = 'Command failed, return code {} != 0'.format(r_code)
             logger.error(message)
             raise SSHCommandFailed(message)
 
@@ -126,8 +111,4 @@ class SSHConnectionFailed(SSHClientError):
 
 
 class SSHCommandFailed(SSHClientError):
-    pass
-
-
-class SSHKeyMissing(SSHClientError):
     pass

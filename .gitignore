@@ -105,5 +105,4 @@ venv.bak/
 .idea
 solutions/test.py
 .pytest_cache
-TODO
 settings_local.yaml

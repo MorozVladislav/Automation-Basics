@@ -3,10 +3,12 @@
 
 import pytest
 
-from config import config
+import config
 from steps.github_api_steps import GitHubAPISteps
 from steps.linux_steps import LinuxSteps
 from utils.ssh_client import SSHClient
+
+config = config.load()
 
 
 @pytest.fixture

@@ -20,63 +20,57 @@ class LinuxSteps(SSHClient):
             self.load_system_known_hosts()
 
     @staticmethod
-    def create_signature(command, options_map, options):
+    def create_signature(command, options_map=(), options=()):
         signature = [command]
-        for option in options_map:
-            if not options_map[option]:
-                continue
-            else:
+        for option, is_exist in options_map:
+            if is_exist:
                 signature.append(option)
-        if options is not None:
-            for option in options:
-                signature.append(option)
+        signature.extend(options)
         return ' '.join(signature)
 
     def step(self, signature, cd=None, **kwargs):
-        if cd is not None:
-            return self.execute('cd {}; {}'.format(cd, signature), **kwargs)
-        else:
-            return self.execute(signature, **kwargs)
+        cmd = 'cd {}; {}'.format(cd, signature) if cd is not None else signature
+        return self.execute(cmd, **kwargs)
 
     def mkdir(self,
               path,
               mode=None,
               parents=False,
               verbose=False,
-              options=None,
+              options=(),
               **kwargs):
-        options_map = {
-            '--mode={}'.format(mode): mode,
-            '-p': parents,
-            '-v': verbose,
-            path: True
-        }
+        options_map = (
+            ('--mode={}'.format(mode), mode),
+            ('-p', parents),
+            ('-v', verbose),
+            (path, True)
+        )
         return self.step(self.create_signature('mkdir', options_map, options), **kwargs)
 
     def rm(self,
            path,
            force=True,
            recursive=False,
-           options=None,
+           options=(),
            **kwargs):
-        options_map = {
-            '-f': force,
-            '-r': recursive,
-            path: True
-        }
+        options_map = (
+            ('-f', force),
+            ('-r', recursive),
+            (path, True)
+        )
         return self.step(self.create_signature('rm', options_map, options), **kwargs)
 
     def ls(self,
            path='',
            show_all=False,
            long_listing_format=False,
-           options=None,
+           options=(),
            **kwargs):
-        options_map = {
-            '-a': show_all,
-            '-l': long_listing_format,
-            path: True
-        }
+        options_map = (
+            ('-a', show_all),
+            ('-l', long_listing_format),
+            (path, True)
+        )
         return self.step(self.create_signature('ls', options_map, options), **kwargs)
 
     def cp(self,
@@ -84,14 +78,14 @@ class LinuxSteps(SSHClient):
            destination='',
            force=False,
            recursive=False,
-           options=None,
+           options=(),
            **kwargs):
-        options_map = {
-            '-f': force,
-            '-r': recursive,
-            source: True,
-            destination: True
-        }
+        options_map = (
+            ('-f', force),
+            ('-r', recursive),
+            (source, True),
+            (destination, True)
+        )
         return self.step(self.create_signature('cp', options_map, options), **kwargs)
 
     def mv(self,
@@ -99,25 +93,25 @@ class LinuxSteps(SSHClient):
            directory='',
            force=False,
            update=False,
-           options=None,
+           options=(),
            **kwargs):
-        options_map = {
-            '-f': force,
-            '-u': update,
-            source: True,
-            directory: True
-        }
+        options_map = (
+            ('-f', force),
+            ('-u', update),
+            (source, True),
+            (directory, True)
+        )
         return self.step(self.create_signature('mv', options_map, options), **kwargs)
 
     def date(self,
              set_time=None,
              universal=False,
              date_format='',
-             options=None,
+             options=(),
              **kwargs):
-        options_map = {
-            '--set={}'.format(set_time): set_time,
-            '-u': universal,
-            '+"{}"'.format(date_format): True
-        }
+        options_map = (
+            ('--set={}'.format(set_time), set_time),
+            ('-u', universal),
+            ('+"{}"'.format(date_format), True)
+        )
         return self.step(self.create_signature('date', options_map, options), **kwargs)

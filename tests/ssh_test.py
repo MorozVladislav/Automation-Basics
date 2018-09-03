@@ -3,37 +3,41 @@
 
 import time
 
-from utils.ssh_client import SSHClientError, SSHConnectionFailed
+from paramiko import SSHException
 
 
 class TestSSH(object):
 
     def test_connection_to_unknown_host(self, ssh_client):
         try:
-            ssh_client.connect(use_credentials=True)
-        except SSHClientError as exc:
+            ssh_client.use_credentials = True
+            ssh_client.connect()
+        except Exception as exc:
             exc_type = type(exc)
         finally:
-            assert exc_type == SSHConnectionFailed
+            assert exc_type == SSHException
 
     def test_connection_allowing_unknown_hosts(self, ssh_client):
         ssh_client.allow_unknown_hosts = True
-        ssh_client.connect(use_credentials=True)
+        ssh_client.use_credentials = True
+        ssh_client.connect()
 
     def test_connection_to_system_known_host(self, ssh_client):
         ssh_client.load_system_known_hosts()
-        ssh_client.connect(use_credentials=True)
+        ssh_client.use_credentials = True
+        ssh_client.connect()
 
     def test_delete_known_hosts(self, ssh_client):
         ssh_client.load_system_known_hosts()
-        ssh_client.connect(use_credentials=True)
+        ssh_client.use_credentials = True
+        ssh_client.connect()
         ssh_client.clear_host_keys()
         try:
-            ssh_client.connect(use_credentials=True)
-        except SSHClientError as exc:
+            ssh_client.connect()
+        except Exception as exc:
             exc_type = type(exc)
         finally:
-            assert exc_type == SSHConnectionFailed
+            assert exc_type == SSHException
 
     def test_execute_command(self, ssh_client):
         ssh_client.load_system_known_hosts()
