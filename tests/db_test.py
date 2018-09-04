@@ -10,10 +10,7 @@ class TestDB(object):
 
     def test_get_users_by_name(self, db_steps, samples):
         condition, expected_result = samples.SAMPLE_2
-        users = db_steps.get_users_by_name(condition)
-        logins = []
-        for user in users:
-            logins.append(user.login)
+        logins = [user.login for user in db_steps.get_users_by_name(condition)]
         assert expected_result in logins
 
     def test_get_user_by_login(self, db_steps, samples):
@@ -56,10 +53,7 @@ class TestDB(object):
 
     def test_get_vehicles_by_type(self, db_steps, samples):
         condition, expected_result = samples.SAMPLE_11
-        vehicles = db_steps.get_vehicles_by_type(condition)
-        vehicle_ids = []
-        for vehicle in vehicles:
-            vehicle_ids.append(vehicle.id)
+        vehicle_ids = [vehicle.id for vehicle in db_steps.get_vehicles_by_type(condition)]
         assert expected_result in vehicle_ids
 
     def test_get_vehicle_price(self, db_steps, samples):
@@ -84,9 +78,7 @@ class TestDB(object):
 
     def test_add_user(self, db_steps, samples):
         name, login, password, vehicle_ids = samples.SAMPLE_15
-        vehicles = []
-        for vehicle_id in vehicle_ids:
-            vehicles.append(db_steps.get_vehicle_by_id(vehicle_id))
+        vehicles = [db_steps.get_vehicle_by_id(vehicle_id) for vehicle_id in vehicle_ids]
         db_steps.add_user(name, login, password, vehicles=vehicles)
         db_steps.save_all()
         users = db_steps.get_users_by_name(name)
@@ -111,9 +103,7 @@ class TestDB(object):
 
     def test_add_vehicle(self, db_steps, samples):
         title, vehicle_type, price, user_ids = samples.SAMPLE_16
-        users = []
-        for user_id in user_ids:
-            users.append(db_steps.get_user_by_id(user_id))
+        users = [db_steps.get_user_by_id(user_id) for user_id in user_ids]
         db_steps.add_vehicle(title, vehicle_type, price, users=users)
         db_steps.save_all()
         assert db_steps.get_vehicle_type(title=title) == vehicle_type

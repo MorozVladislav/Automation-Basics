@@ -16,5 +16,5 @@ db:
   name: test_db
   host: 192.168.56.101
   user: root
-  password: 12345678
+  password: password
   log: True

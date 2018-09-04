@@ -55,9 +55,7 @@ class DBClient(Session):
         if tables_list is None:
             self._base.metadata.create_all(bind=self._engine)
         else:
-            tables = []
-            for table in tables_list:
-                tables.append(table.__table__)
+            tables = [table.__table__ for table in tables_list]
             self._base.metadata.create_all(bind=self._engine, tables=tables)
 
     def delete_tables(self, tables_list=None):
@@ -65,7 +63,5 @@ class DBClient(Session):
         if tables_list is None:
             self._base.metadata.drop_all(bind=self._engine)
         else:
-            tables = []
-            for table in tables_list:
-                tables.append(table.__table__)
+            tables = [table.__table__ for table in tables_list]
             self._base.metadata.drop_all(bind=self._engine, tables=tables)

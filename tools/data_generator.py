@@ -59,27 +59,25 @@ class DataGenerator(object):
 
         while len(self.session.query(Users).all()) < 100:
             login = forgery_py.internet.user_name()
-            if login in self.LOGINS:
-                continue
-            user = Users(
-                name=forgery_py.name.full_name(),
-                login=login,
-                password=forgery_py.basic.text(8),
-            )
-            self.LOGINS.append(login)
-            self.session.add(user)
+            if login not in self.LOGINS:
+                user = Users(
+                    name=forgery_py.name.full_name(),
+                    login=login,
+                    password=forgery_py.basic.text(8),
+                )
+                self.LOGINS.append(login)
+                self.session.add(user)
 
         while len(self.session.query(Vehicles).all()) < 10:
             title = forgery_py.basic.hex_color()
-            if title in self.TITLES:
-                continue
-            vehicle = Vehicles(
-                title=title,
-                type=forgery_py.basic.hex_color_short(),
-                price=randint(1000, 1000000)
-            )
-            self.TITLES.append(title)
-            self.session.add(vehicle)
+            if title not in self.TITLES:
+                vehicle = Vehicles(
+                    title=title,
+                    type=forgery_py.basic.hex_color_short(),
+                    price=randint(1000, 1000000)
+                )
+                self.TITLES.append(title)
+                self.session.add(vehicle)
 
         for user in self.session.query(Users):
             vehicles = []
@@ -113,9 +111,8 @@ class DataGenerator(object):
         self.SAMPLE_5 = self.session.query(Users.id, Users.password).filter(Users.id == randint(1, 100)).first()
 
         sample_6_id = randint(1, 100)
-        sample_6_ids = []
-        for vehicle in self.session.query(Users).filter(Users.id == sample_6_id).first().vehicles:
-            sample_6_ids.append(vehicle.id)
+        vehicles = self.session.query(Users).filter(Users.id == sample_6_id).first().vehicles
+        sample_6_ids = [vehicle.id for vehicle in vehicles]
         self.SAMPLE_6 = (
             sample_6_id,
             sample_6_ids
@@ -134,18 +131,15 @@ class DataGenerator(object):
                                               Vehicles.price).filter(Vehicles.id == randint(1, 10)).first()
 
         sample_13_1_id = randint(1, 10)
-        sample_13_1_ids = []
-        for user in self.session.query(Vehicles).filter(Vehicles.id == sample_13_1_id).first().users:
-            sample_13_1_ids.append(user.id)
+        users = self.session.query(Vehicles).filter(Vehicles.id == sample_13_1_id).first().users
+        sample_13_1_ids = [user.id for user in users]
         self.SAMPLE_13_1 = (
             sample_13_1_id,
             sample_13_1_ids
         )
 
         sample_13_2_vehicle = self.session.query(Vehicles).filter(Vehicles.id == randint(1, 10)).first()
-        sample_13_2_ids = []
-        for user in sample_13_2_vehicle.users:
-            sample_13_2_ids.append(user.id)
+        sample_13_2_ids = [user.id for user in sample_13_2_vehicle.users]
         self.SAMPLE_13_2 = (
             sample_13_2_vehicle.title,
             sample_13_2_ids
@@ -163,7 +157,7 @@ class DataGenerator(object):
         sample_15_name = forgery_py.name.full_name()
         sample_15_login = None
         sample_15_password = forgery_py.basic.text(8)
-        sample_15_vehicles = list(randint(1, 10) for _ in range(randint(1, 5)))
+        sample_15_vehicles = [randint(1, 10) for _ in range(randint(1, 5))]
         while sample_15_login is None:
             login = forgery_py.internet.user_name()
             if login not in self.LOGINS:
@@ -179,7 +173,7 @@ class DataGenerator(object):
         sample_16_title = None
         sample_16_type = forgery_py.basic.hex_color_short()
         sample_16_price = randint(1000, 1000000)
-        sample_16_users = list(randint(1, 100) for _ in range(randint(1, 20)))
+        sample_16_users = [randint(1, 100) for _ in range(randint(1, 20))]
         while sample_16_title is None:
             title = forgery_py.basic.hex_color()
             if title not in self.TITLES:
