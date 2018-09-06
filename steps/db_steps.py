@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
+from logging import getLogger
 
 from integration.db_client import DBClient
 from models.taxi import Users, Vehicles
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class DBSteps(DBClient):
 
     def __init__(self, db_name, username, password, host='127.0.0.1', port='5432', autocomit=False, autoflush=True,
-                 save_when_exit=False, log=False):
+                 save_when_close=False, log=False):
         super().__init__(db_name, username, password, db_type='postgresql', dbapi='psycopg2', host=host, port=port,
-                         autocomit=autocomit, autoflush=autoflush, save_when_exit=save_when_exit, log=log)
+                         autocomit=autocomit, autoflush=autoflush, save_when_close=save_when_close, log=log)
 
     def get_user_by_id(self, user_id):
         return self.query(Users).filter(Users.id == user_id).first()
@@ -46,7 +46,7 @@ class DBSteps(DBClient):
         elif title is not None:
             return self.get_vehicle_by_title(title)
         else:
-            message = 'Neither of vehicle_id and title are specified'
+            message = 'Neither vehicle_id nor title are specified'
             logger.error(message)
             raise QueryParametersNotSpecified(message)
 
@@ -69,30 +69,28 @@ class DBSteps(DBClient):
         return total_price
 
     def add_user(self, username, login, password, vehicles=None):
+        logins = [user.login for user in self.query(Users).all()]
+        if login in logins:
+            message = 'Login {} already exist'.format(login)
+            logger.error(message)
+            raise LoginAlreadyExist(message)
         user = Users()
-        user.name = username
-        user.login = login
-        user.password = password
-        if vehicles is not None:
-            user.vehicles = list(set(vehicles))
+        user.name, user.login, user.password = username, login, password
+        user.vehicles = [value for value in set(vehicles) if vehicles is not None]
         self.add(user)
-        logger.info('User {} was added to DB'.format(username))
+        logger.info('User {} was added'.format(username))
 
     def add_vehicle(self, title, vehicle_type, price, users=None):
-        vehicles = self.query(Vehicles).all()
-        for vehicle in vehicles:
-            if vehicle.title == title:
-                message = 'Vehicle {} already exist'.format(title)
-                logger.error(message)
-                raise VehicleAlreadyExist(message)
+        titles = [vehicle.title for vehicle in self.query(Vehicles).all()]
+        if title in titles:
+            message = 'Vehicle {} already exist'.format(title)
+            logger.error(message)
+            raise VehicleAlreadyExist(message)
         vehicle = Vehicles()
-        vehicle.title = title
-        vehicle.type = vehicle_type
-        vehicle.price = price
-        if users is not None:
-            vehicle.users = list(set(users))
+        vehicle.title, vehicle.type, vehicle.price = title, vehicle_type, price
+        vehicle.users = [value for value in (set(users)) if users is not None]
         self.add(vehicle)
-        logger.info('Vehicle {} was added to DB'.format(title))
+        logger.info('Vehicle {} was added'.format(title))
 
     def delete_user(self, user_id):
         user = self.get_user_by_id(user_id)
@@ -114,6 +112,10 @@ class QueryParametersNotSpecified(DBStepsException):
 
 
 class UserCreationError(DBStepsException):
+    pass
+
+
+class LoginAlreadyExist(DBStepsException):
     pass
 
 

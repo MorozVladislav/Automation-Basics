@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
+from logging import getLogger
 from random import randint
 
-import forgery_py
+from forgery_py.forgery.basic import text, hex_color, hex_color_short
+from forgery_py.forgery.internet import user_name
+from forgery_py.forgery.name import full_name
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from models.taxi import Users, Vehicles, association
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class DataGenerator(object):
@@ -53,53 +55,57 @@ class DataGenerator(object):
         self.session = sessionmaker(bind=self.engine)()
         self.base = declarative_base(bind=self.engine)
 
-    def generate_data(self):
-        self.base.metadata.drop_all(tables=[Users.__table__, Vehicles.__table__, association])
-        self.base.metadata.create_all(tables=[Users.__table__, Vehicles.__table__, association])
-
-        while len(self.session.query(Users).all()) < 100:
-            login = forgery_py.internet.user_name()
-            if login not in self.LOGINS:
-                user = Users(
-                    name=forgery_py.name.full_name(),
-                    login=login,
-                    password=forgery_py.basic.text(8),
-                )
-                self.LOGINS.append(login)
-                self.session.add(user)
-
-        while len(self.session.query(Vehicles).all()) < 10:
-            title = forgery_py.basic.hex_color()
-            if title not in self.TITLES:
-                vehicle = Vehicles(
-                    title=title,
-                    type=forgery_py.basic.hex_color_short(),
-                    price=randint(1000, 1000000)
-                )
-                self.TITLES.append(title)
-                self.session.add(vehicle)
-
-        for user in self.session.query(Users):
+    def generate_user(self):
+        login = user_name()
+        if login not in self.LOGINS:
+            user = Users(
+                name=full_name(),
+                login=login,
+                password=text(8),
+            )
+            self.LOGINS.append(login)
             vehicles = []
-            for i in range(randint(1, 5)):
+            for _ in range(randint(1, 5)):
                 vehicle_id = randint(1, 10)
                 vehicle = self.session.query(Vehicles).filter(Vehicles.id == vehicle_id).first()
                 if vehicle not in vehicles:
                     vehicles.append(vehicle)
             user.vehicles = vehicles
-            self.session.add(user)
+            logger.info('User was generated. Name: {}, login: {}, password: {}. Vehicles: {}'.format(
+                user.name,
+                user.login,
+                user.password,
+                str([vehicle.id for vehicle in user.vehicles]).strip('[]')))
+            return user
 
-        for user_id, name, login, password in self.session.query(Users.id, Users.name, Users.login, Users.password):
-            logger.info('{} {} {} {}'.format(user_id, name.rstrip(), login.rstrip(), password.rstrip()))
+    def generate_vehicle(self):
+        title = hex_color()
+        if title not in self.TITLES:
+            vehicle = Vehicles(
+                title=title,
+                type=hex_color_short(),
+                price=randint(1000, 1000000)
+            )
+            self.TITLES.append(title)
+            logger.info('Vehicle was generated. Title: {}, type: {}, price: {}.'.format(
+                vehicle.title,
+                vehicle.type,
+                vehicle.price))
+            return vehicle
 
-        for vehicle_id, title, vehicle_type, price in self.session.query(Vehicles.id, Vehicles.title, Vehicles.type,
-                                                                         Vehicles.price):
-            logger.info('{} {} {} {}'.format(vehicle_id, title.rstrip(), vehicle_type.rstrip(), price))
+    def generate_data(self):
+        self.base.metadata.drop_all(tables=[Users.__table__, Vehicles.__table__, association])
+        self.base.metadata.create_all(tables=[Users.__table__, Vehicles.__table__, association])
 
-        for user_id, user in self.session.query(Users.id, Users).order_by(Users.id):
-            logger.info('User ID: {}'.format(user_id))
-            for vehicle in user.vehicles:
-                logger.info('\tVehicle ID: {}'.format(vehicle.id))
+        while len(self.session.query(Vehicles).all()) < 10:
+            vehicle = self.generate_vehicle()
+            if vehicle is not None:
+                self.session.add(vehicle)
+
+        while len(self.session.query(Users).all()) < 100:
+            user = self.generate_user()
+            if user is not None:
+                self.session.add(user)
 
         self.session.commit()
 
@@ -154,34 +160,25 @@ class DataGenerator(object):
             total_price
         )
 
-        sample_15_name = forgery_py.name.full_name()
-        sample_15_login = None
-        sample_15_password = forgery_py.basic.text(8)
-        sample_15_vehicles = [randint(1, 10) for _ in range(randint(1, 5))]
-        while sample_15_login is None:
-            login = forgery_py.internet.user_name()
-            if login not in self.LOGINS:
-                sample_15_login = login
-                self.LOGINS.append(login)
+        sample_15_user = None
+        while sample_15_user is None:
+            sample_15_user = self.generate_user()
         self.SAMPLE_15 = (
-            sample_15_name,
-            sample_15_login,
-            sample_15_password,
-            sample_15_vehicles
+            sample_15_user.name,
+            sample_15_user.login,
+            sample_15_user.password,
+            [vehicle.id for vehicle in sample_15_user.vehicles]
         )
 
-        sample_16_title = None
-        sample_16_type = forgery_py.basic.hex_color_short()
-        sample_16_price = randint(1000, 1000000)
-        sample_16_users = [randint(1, 100) for _ in range(randint(1, 20))]
-        while sample_16_title is None:
-            title = forgery_py.basic.hex_color()
-            if title not in self.TITLES:
-                sample_16_title = title
-                self.TITLES.append(title)
+        sample_16_vehicle = None
+        while sample_16_vehicle is None:
+            sample_16_vehicle = self.generate_vehicle()
+        sample_16_vehicle.users = [
+            self.session.query(Users).filter(Users.id == randint(1, 100)).first() for _ in range(randint(1, 20))
+        ]
         self.SAMPLE_16 = (
-            sample_16_title,
-            sample_16_type,
-            sample_16_price,
-            sample_16_users
+            sample_16_vehicle.title,
+            sample_16_vehicle.type,
+            sample_16_vehicle.price,
+            [user.id for user in sample_16_vehicle.users]
         )

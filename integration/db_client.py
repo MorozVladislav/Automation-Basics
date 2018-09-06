@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
+from logging import getLogger
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class DBClient(Session):
 
     def __init__(self, db_name, username, password, db_type='postgresql', dbapi='psycopg2', host='127.0.0.1',
-                 port='5432', autocomit=False, autoflush=True, save_when_exit=False, log=False):
+                 port='5432', autocomit=False, autoflush=True, save_when_close=False, log=False):
         self.db_type = db_type
         self.dbapi = dbapi
         self.host = host
@@ -32,19 +32,22 @@ class DBClient(Session):
         ), echo=log)
 
         super().__init__(bind=self._engine, autocommit=autocomit, autoflush=autoflush)
-        self.save_when_exit = save_when_exit
+        self.save_when_close = save_when_close
         self._base = declarative_base(bind=self._engine)
 
     def __del__(self):
-        if self.save_when_exit:
-            self.save_all()
         self.close()
+
+    def close(self):
+        if self.save_when_close:
+            self.save_all()
         logger.info('Session for {}@{}:{}/{} was closed'.format(
             self.username,
             self.host,
             self.port,
             self.db_name
         ))
+        super().close()
 
     def save_all(self):
         self._base.metadata.create_all()
